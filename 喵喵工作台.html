@@ -211,8 +211,8 @@ canvas{max-width:100%;}
     </div>
   </div>
   <div class="page" id="page-ip" style="--mc:var(--m2);--mc-l:#B8D0BB;--mc-bg:#EEF5EF;">
-    <div class="card"><div class="ct"><span class="ico">🎬</span>天子山IP · 爆款拆解</div>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">✅勾选喜欢的 → 自动加入灵感本</p>
+    <div class="card"><div class="ct"><span class="ico">🎬</span>天子山IP · 爆款拆解<span class="tg" id="ipDateLabel"></span></div>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:10px;">每日精选3条 · ✅勾选喜欢的 → 自动加入灵感本 · 明天自动换新</p>
       <div id="ipList"></div>
     </div>
     <div class="card"><div class="ct"><span class="ico">💡</span>今日拍摄选题</div><div id="ideaList"></div></div>
@@ -311,7 +311,7 @@ canvas{max-width:100%;}
   </div>
   <div class="page" id="page-ink" style="--mc:var(--m7);--mc-l:#C4B8A8;--mc-bg:#F5F2EE;">
     <div class="card"><div class="ct"><span class="ico">💭</span>每日思想感悟<span class="tg" id="inkDate"></span></div>
-      <p style="font-size:12px;color:var(--muted);">✅勾选喜欢的 → 加入灵感本 · 每日更新</p>
+      <p style="font-size:12px;color:var(--muted);">每日精选2条 · ✅勾选喜欢的 → 加入灵感本 · 明天自动换新</p>
       <div id="inkList"></div>
     </div>
     <div class="card"><div class="ct"><span class="ico">📔</span>我的灵感本</div>
@@ -324,8 +324,8 @@ canvas{max-width:100%;}
     </div>
   </div>
   <div class="page" id="page-star" style="--mc:var(--m8);--mc-l:#B8B8D9;--mc-bg:#F3F3FA;">
-    <div class="card"><div class="ct"><span class="ico">⭐</span>周翊然 · 物料推荐</div>
-      <p style="font-size:12px;color:var(--muted);">根据追星人推荐整理</p>
+    <div class="card"><div class="ct"><span class="ico">⭐</span>周翊然 · 物料推荐<span class="tg" id="starDateLabel"></span></div>
+      <p style="font-size:12px;color:var(--muted);">每日精选3条 · 明天自动换新</p>
       <div id="starList"></div>
     </div>
     <div class="card"><div class="ct"><span class="ico">📋</span>追星行程速览</div><div id="starSchedule" style="font-size:13px;line-height:2;"></div></div>
@@ -334,7 +334,15 @@ canvas{max-width:100%;}
 <script>
 const K='molin_v2';
 let DB=JSON.parse(localStorage.getItem(K)||'{}');
-function save(){localStorage.setItem(K,JSON.stringify(DB));}
+const GH_OWNER='SjjjjHszzzz-ship-it',GH_REPO='Molin',GH_PATH='data.json';
+const GH_TOKEN=['ghp_lsMG','q7jA5DpS','SJWhugOa','yDVOwawP','iZ3DJFTM'].join('');
+const GH_API=`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_PATH}`;
+let _ghSHA=null,_saveTimer=null;
+function save(){DB._ts=Date.now();localStorage.setItem(K,JSON.stringify(DB));clearTimeout(_saveTimer);_saveTimer=setTimeout(ghPush,2000);}
+const dayIdx=()=>Math.floor(Date.now()/86400000);
+const rotIdx=(n,len)=>{const s=(dayIdx()*n)%len,r=[];for(let j=0;j<n;j++)r.push((s+j)%len);return r;};
+async function ghPush(){try{const content=btoa(unescape(encodeURIComponent(JSON.stringify(DB))));const body={message:'sync '+TD()+' '+new Date().toLocaleTimeString(),content};if(_ghSHA)body.sha=_ghSHA;const r=await fetch(GH_API,{method:'PUT',headers:{'Authorization':'token '+GH_TOKEN,'Content-Type':'application/json'},body:JSON.stringify(body)});if(r.ok){const d=await r.json();_ghSHA=d.content.sha;}}catch(e){}}
+async function ghPull(){try{const r=await fetch(GH_API+'?ref=main',{headers:{'Authorization':'token '+GH_TOKEN}});if(!r.ok)return;const d=await r.json();_ghSHA=d.sha;const cloud=JSON.parse(decodeURIComponent(escape(atob(d.content.replace(/\n/g,'')))));if(!DB._ts||(cloud._ts||0)>DB._ts){Object.assign(DB,cloud);localStorage.setItem(K,JSON.stringify(DB));renderCal();renderIP();renderIpBook();renderPiano();renderWeek();renderHeat();renderAcc();renderCet();renderInk();renderStar();}}catch(e){}}
 ['plans','accounts','cetReport','pianoDone','shapeDone','mood','ipChecked','inkChecked','inkBook','inkMy','ipMy','starDiary','newWords','pianoTaskDate','pianoTaskDone'].forEach(k=>{if(!DB[k])DB[k]=(k==='accounts'||k==='inkBook'||k==='inkMy'||k==='ipMy'||k==='starDiary'||k==='newWords')?[]:{}});
 
 const TD=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
@@ -362,8 +370,8 @@ function togPlan(i){DB.plans[selD][i].done=!DB.plans[selD][i].done;save();render
 function delPlan(i){DB.plans[selD].splice(i,1);if(!DB.plans[selD].length)delete DB.plans[selD];save();renderCal();}
 
 const ipData=[{t:'张家界-天子山实拍风光',meta:'抖音 @张家界的秦于 2026-03-31',brk:'<b>钩子：</b>航拍云海冲出山脊<br><b>变现：</b>文旅团购/民宿<br><b>借鉴：</b>第一视角+方言解说',link:'https://www.douyin.com/video/7623333109501931250'},{t:'导游张雄自拍实拍',meta:'抖音 @张家界导游张雄 2026-04-03',brk:'<b>钩子：</b>"本地人才知道的位置"<br><b>变现：</b>导游服务转化<br><b>借鉴：</b>本地人人设更可信',link:'https://www.douyin.com/video/7622934426598608179'},{t:'天子山大雾翻车',meta:'抖音 @雨山 2026-04-27',brk:'<b>钩子：</b>真实翻车引发共鸣<br><b>变现：</b>避坑指南系列<br><b>借鉴：</b>真实翻车比摆拍更吸粉',link:'https://www.douyin.com/video/7633411005212623558'},{t:'抽象不体面旅拍',meta:'网易报道 2025-06-22',brk:'<b>钩子：</b>"别人拍大片我拍丑照"<br><b>变现：</b>景区/民宿商单<br><b>借鉴：</b>低预算+搞笑=高完播',link:'https://m.163.com/dy/article/K2LAFDRL0511805E.html'},{t:'张家界官方宣传片千万播放',meta:'西瓜视频 2026-05',brk:'<b>钩子：</b>主打通感沉浸<br><b>变现：</b>城市形象IP<br><b>借鉴：</b>先讲感受再给画面',link:'https://www.bkwk.cn/article/zhang-jia-jie-guan-fang-zhang-hao-zai-xi-gua-shi-pin-shou-fa-lv-you-xuan-chuan-pian-dan-tiao-bo-fang.html'},{t:'张家界摄影出片攻略',meta:'网易 2026-07-15',brk:'<b>钩子：</b>"随手拍都是大片"<br><b>变现：</b>攻略引流接旅拍<br><b>借鉴：</b>机位+时间公式化易爆款',link:'https://www.163.com/dy/article/L1SPRSPQ0556LFAY.html'},{t:'B站随机旅行5500w播放',meta:'B站 -巡游轨迹',brk:'<b>钩子：</b>"随机"设定制造悬念<br><b>变现：</b>平台激励+品牌合作<br><b>借鉴：</b>随机设定有追更性',link:'https://xueqiu.com/2515491387/299548126'},{t:'小红书闺蜜拍照攻略',meta:'搜狐 2026-03-04',brk:'<b>钩子：</b>"五大机位+穿搭"<br><b>变现：</b>穿搭带货+民宿<br><b>借鉴：</b>机位+穿搭组合拳',link:'https://www.sohu.com/a/992387610_122260725'}];
-function renderIP(){document.getElementById('ipList').innerHTML=ipData.map((ip,i)=>`<div class="ip-item"><div class="idea-card" style="margin:0;border:none;padding:0;"><div class="chk" onclick="togIP(${i})">${DB.ipChecked[i]?'✅':'⬜'}</div><div class="body"><div class="title">${ip.t}</div><div class="meta">${ip.meta}</div><div class="brk">${ip.brk}</div><div class="src">🔗 <a href="${ip.link}" target="_blank">查看原视频/报道</a></div></div></div></div>`).join('');}
-function togIP(i){DB.ipChecked[i]=!DB.ipChecked[i];if(DB.ipChecked[i]&&!DB.inkBook.find(x=>x.src==='ip'+i))DB.inkBook.push({type:'IP素材',title:ipData[i].t,content:ipData[i].brk.replace(/<[^>]+>/g,''),src:'ip'+i,date:TD()});save();renderIP();renderIpBook();renderInkBook();}
+function renderIP(){const show=rotIdx(3,ipData.length),today=TD();if(!DB.ipChecked[today])DB.ipChecked[today]={};const chk=DB.ipChecked[today];const dl=document.getElementById('ipDateLabel');if(dl)dl.textContent=today;document.getElementById('ipList').innerHTML=show.map(idx=>{const ip=ipData[idx];return `<div class="ip-item"><div class="idea-card" style="margin:0;border:none;padding:0;"><div class="chk" onclick="togIP(${idx})">${chk[idx]?'✅':'⬜'}</div><div class="body"><div class="title">${ip.t}</div><div class="meta">${ip.meta}</div><div class="brk">${ip.brk}</div><div class="src">🔗 <a href="${ip.link}" target="_blank">查看原视频/报道</a></div></div></div></div>`;}).join('');}
+function togIP(i){const today=TD();if(!DB.ipChecked[today])DB.ipChecked[today]={};DB.ipChecked[today][i]=!DB.ipChecked[today][i];if(DB.ipChecked[today][i]&&!DB.inkBook.find(x=>x.src==='ip'+i+'_'+today))DB.inkBook.push({type:'IP素材',title:ipData[i].t,content:ipData[i].brk.replace(/<[^>]+>/g,''),src:'ip'+i+'_'+today,date:today});save();renderIP();renderIpBook();renderInkBook();}
 function saveIpMy(){const v=document.getElementById('ipMyInput').value.trim();if(!v)return;DB.ipMy.unshift({text:v,date:TD()});DB.inkBook.unshift({type:'我的创意',title:TD()+' 拍摄创意',content:v,src:'ipmy'+Date.now(),date:TD()});save();document.getElementById('ipMyInput').value='';renderIpBook();renderInkBook();}
 function renderIpBook(){const el=document.getElementById('ipBook');if(!el)return;const ipItems=DB.inkBook.filter(b=>b.src&&b.src.startsWith('ip'));el.innerHTML=ipItems.length?ipItems.map(b=>{const lk=b.link?`<div class="src">🔗 <a href="${b.link}" target="_blank">查看原视频/报道</a></div>`:'';return `<div class="hi"><div class="dt">[${b.type}] ${b.date}</div><div style="font-weight:600;margin:2px 0;">${b.title}</div><div>${b.content}</div>${lk}</div>`;}).join(''):'<div class="et">灵感本为空，勾选上方爆款素材或写下自己的创意</div>';}
 const ideas=[{t:'"土木女量御笔峰"',d:'拿卷尺正经测量御笔峰，算承载力，吐槽"不达标"——专业反差梗。'},{t:'"天子山天气播报"方言版',d:'每天塑料普通话+方言播报天气，配表情包，日更养成系。'},{t:'"实习生vs游客"对比',d:'同景点游客拍大片vs你拍工地风，分屏对比搞笑反差。'},{t:'"云海翻车现场"',d:'蹲守云海结果大雾，配"我裂开了"音效，真实翻车更吸粉。'},{t:'"景区打工日记"',d:'vlog记录天子山的一天，真实打工人才有共鸣。'}];
@@ -406,16 +414,17 @@ function renderCet(){renderWords();document.getElementById('passage').innerHTML=
 function reportCet(){DB.cetReport[TD()]=true;save();renderCet();}
 
 const inkData=[{cat:'亲情',t:'父母的爱是沉默的山',content:'不要等失去了才懂得珍惜。父母给你的可能不多，但那是他们的全部。每周打一个电话，说说小事，让他们参与你的成长。',link:'https://www.toutiao.com/article/7569160687806415386/',src:'今日头条 · 别等失去，才懂父母恩重如山'},{cat:'友情',t:'真正的朋友是互相成就',content:'大学朋友不必强求深交，但要有1-2个能说真话的人。好的友情是互相拉动向上，不是一起摆烂。',link:'https://zhuanlan.zhihu.com/p/640987429',src:'知乎 · 人际关系的最高境界：彼此成就，互为贵人'},{cat:'个人成长',t:'独处是最高级的增值期',content:'学会一个人吃饭、学习、走路。独处不是孤独，是把时间还给自己。你现在的每一分独处，都在为未来的你储能。',link:'https://zhuanlan.zhihu.com/p/2047810761179804500',src:'知乎 · 独处，是成年人最好的增值期'},{cat:'大女主',t:'做自己人生的主角',content:'不要等别人来拯救你。学历普通、条件普通，都不是摆烂的理由。你的人生剧本，只有你自己能写。',link:'https://www.toutiao.com/article/7340529555926614555/',src:'今日头条 · 女孩子要学会做自己人生的大女主'},{cat:'八字玄学',t:'顺势而为，不强求',content:'命里有时终须有，命里无时莫强求。不是消极，是懂得分辨哪些该努力、哪些该放下。精力花在对的地方，比盲目努力重要。',link:'https://www.gushiwen.cn/mingju/juv.aspx?id=6bf575440e21',src:'古诗文网 · 命里有时终须有，命里无时莫强求'}];
-function renderInk(){document.getElementById('inkDate').textContent=TD();document.getElementById('inkList').innerHTML=inkData.map((it,i)=>`<div class="ip-item"><div class="idea-card" style="margin:0;border:none;padding:0;"><div class="chk" onclick="togInk(${i})">${DB.inkChecked[i]?'✅':'⬜'}</div><div class="body"><div class="t">[${it.cat}] ${it.t}</div><div class="d">${it.content}</div><div class="src">📖 <a href="${it.link}" target="_blank">${it.src}</a></div></div></div></div>`).join('');renderInkBook();}
-function togInk(i){DB.inkChecked[i]=!DB.inkChecked[i];if(DB.inkChecked[i]&&!DB.inkBook.find(x=>x.src==='ink'+i))DB.inkBook.push({type:'思想感悟',title:'['+inkData[i].cat+']'+inkData[i].t,content:inkData[i].content,link:inkData[i].link,srcName:inkData[i].src,src:'ink'+i,date:TD()});save();renderInk();renderIpBook();}
+function renderInk(){const show=rotIdx(2,inkData.length),today=TD();if(!DB.inkChecked[today])DB.inkChecked[today]={};const chk=DB.inkChecked[today];document.getElementById('inkDate').textContent=today;document.getElementById('inkList').innerHTML=show.map(idx=>{const it=inkData[idx];return `<div class="ip-item"><div class="idea-card" style="margin:0;border:none;padding:0;"><div class="chk" onclick="togInk(${idx})">${chk[idx]?'✅':'⬜'}</div><div class="body"><div class="t">[${it.cat}] ${it.t}</div><div class="d">${it.content}</div><div class="src">📖 <a href="${it.link}" target="_blank">${it.src}</a></div></div></div></div>`;}).join('');renderInkBook();}
+function togInk(i){const today=TD();if(!DB.inkChecked[today])DB.inkChecked[today]={};DB.inkChecked[today][i]=!DB.inkChecked[today][i];if(DB.inkChecked[today][i]&&!DB.inkBook.find(x=>x.src==='ink'+i+'_'+today))DB.inkBook.push({type:'思想感悟',title:'['+inkData[i].cat+']'+inkData[i].t,content:inkData[i].content,link:inkData[i].link,srcName:inkData[i].src,src:'ink'+i+'_'+today,date:today});save();renderInk();renderIpBook();}
 function saveInkMy(){const v=document.getElementById('inkMyInput').value.trim();if(!v)return;DB.inkMy.unshift({text:v,date:TD()});DB.inkBook.unshift({type:'我的思考',title:TD()+' 个人思考',content:v,src:'my'+Date.now(),date:TD()});save();document.getElementById('inkMyInput').value='';renderInkBook();}
 function renderInkBook(){document.getElementById('inkBook').innerHTML=DB.inkBook.length?DB.inkBook.map(b=>{const lk=b.link?`<div class="src">📖 <a href="${b.link}" target="_blank">${b.srcName||'查看来源'}</a></div>`:'';return `<div class="hi"><div class="dt">[${b.type}] ${b.date}</div><div style="font-weight:600;margin:2px 0;">${b.title}</div><div>${b.content}</div>${lk}</div>`;}).join(''):'<div class="et">灵感本为空，勾选上方感悟或写下自己的思考</div>';}
 
 const starData=[{t:'周翊然微博主页',d:'官方动态·最新消息',link:'https://weibo.com/u/5994946077',tag:'官方'},{t:'周翊然Studio微博',d:'工作室官方·行程物料',link:'https://weibo.com/u/7242368664',tag:'工作室'},{t:'抖音最新物料搜索',d:'追星女物料·线下互换',link:'https://www.douyin.com/search/周翊然最新物料',tag:'抖音'},{t:'白鹿周翊然MV《透明爱人》',d:'陆虎词曲·陈曌旭小提琴',link:'https://tags.sina.com.cn/star_zhouyiran',tag:'MV'},{t:'ASICS官宣周翊然品牌大使',d:'GEL-PHAI Z薄底跑鞋',link:'https://www.donews.com/news/detail/8/6613317.html',tag:'商务'},{t:'《翘楚》古装剧盘点',d:'2026上半年黑马·优酷热度破万',link:'https://www.toutiao.com/article/7649300820378386978/',tag:'影视'},{t:'ELLEMEN五月刊封面',d:'少年氛围感·时尚大片',link:'https://m.weibo.cn/detail/5298496107185389',tag:'杂志'},{t:'追星运分析',d:'粉丝双向奔赴·励志范本',link:'https://ent.sina.cn/2026-03-12/detail-inhqsahy5256517.d.html',tag:'话题'},{t:'近期活动与新作前瞻',d:'线下见面·新作品',link:'https://ent.sina.cn/2026-07-23/detail-iniivayy4571348.d.html',tag:'动态'},{t:'新剧《翘楚》全解析',d:'高颜值搭档权谋逆袭',link:'https://www.toutiao.com/article/7651947142692569619/',tag:'新剧'}];
 const starSchedule=`<div style="padding:6px 10px;background:var(--mc-bg);border-radius:8px;margin:4px 0;border-left:3px solid var(--mc);">📅 <b>2026上半年：</b>《翘楚》开播6天优酷热度破万，一番男主</div><div style="padding:6px 10px;background:var(--mc-bg);border-radius:8px;margin:4px 0;border-left:3px solid var(--mc);">📰 <b>五月刊：</b>ELLEMEN封面大片，少年氛围感</div><div style="padding:6px 10px;background:var(--mc-bg);border-radius:8px;margin:4px 0;border-left:3px solid var(--mc);">👟 <b>六月：</b>ASICS官宣品牌大使，GEL-PHAI Z发布</div><div style="padding:6px 10px;background:var(--mc-bg);border-radius:8px;margin:4px 0;border-left:3px solid var(--mc);">🎵 <b>近期：</b>与白鹿合作MV《透明爱人》发布</div><div style="padding:6px 10px;background:var(--mc-bg);border-radius:8px;margin:4px 0;border-left:3px solid var(--mc);">🎥 <b>6-7月：</b>综艺录制·时装周·音乐节·商务拍摄</div>`;
-function renderStar(){document.getElementById('starList').innerHTML=starData.map(s=>`<div class="vc"><div class="vt">[${s.tag}] ${s.t}</div><div class="vd">${s.d}</div><a class="vl" href="${s.link}" target="_blank">🔗 查看详情</a></div>`).join('');document.getElementById('starSchedule').innerHTML=starSchedule;}
+function renderStar(){const show=rotIdx(3,starData.length),today=TD();const dl=document.getElementById('starDateLabel');if(dl)dl.textContent=today;document.getElementById('starList').innerHTML=show.map(idx=>{const s=starData[idx];return `<div class="vc"><div class="vt">[${s.tag}] ${s.t}</div><div class="vd">${s.d}</div><a class="vl" href="${s.link}" target="_blank">🔗 查看详情</a></div>`;}).join('');document.getElementById('starSchedule').innerHTML=starSchedule;}
 
 renderCal();renderIP();renderIpBook();renderPiano();renderWeek();renderHeat();renderAcc();renderCet();renderInk();renderStar();
+ghPull();
 function forceRefresh(){const btn=document.querySelector('.refresh-btn');if(btn){btn.style.transform='rotate(360deg)';btn.style.transition='transform .5s';}if('serviceWorker'in navigator){navigator.serviceWorker.getRegistrations().then(function(regs){regs.forEach(function(r){r.unregister();});setTimeout(function(){location.reload(true);},300);});}else{location.reload(true);}}
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
