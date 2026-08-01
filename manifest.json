@@ -1,0 +1,24 @@
+{
+  "name": "Molin专属工作台💼·墨鳞",
+  "short_name": "Molin工作台",
+  "description": "Molin的专属工作台 · 今天也要好好生活哦",
+  "start_url": "喵喵工作台.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FAF8F4",
+  "theme_color": "#8A9CB3",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
