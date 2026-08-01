@@ -16,7 +16,7 @@
   --mist:#8A9CB3;--mist-l:#A8B8CC;--mist-ll:#C4D0DD;--mist-bg:#EDF0F4;--mist-bg2:#F5F7FA;
   --cream:#FAF8F4;--ink:#2B2B2B;--ink-s:#4A4A4A;--muted:#8B95A3;--line:#DDE3EB;--line-s:#E8ECF1;
   --card:#FFF;--shadow:0 2px 12px rgba(138,156,179,.12);--shadow-lg:0 6px 24px rgba(138,156,179,.18);
-  --m1:#8A9CB3;--m2:#9DB5A0;--m3:#A89BC4;--m4:#C49B9B;--m5:#8BB0B5;--m6:#C4A88B;--m7:#A89989;--m8:#9B9BC4;
+  --m1:#8A9CB3;--m2:#9DB5A0;--m3:#A89BC4;--m4:#C49B9B;--m5:#8BB0B5;--m6:#C4A88B;--m7:#A89989;--m8:#9B9BC4;--m9:#8B9B9B;--m10:#9B8BA8;
   --green:#6FB07A;--red:#D97B7B;--yellow:#D4B96A;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0;}
@@ -186,6 +186,8 @@ canvas{max-width:100%;}
     <div class="ni" data-page="eng" style="--mc:var(--m6)"><span class="ico">📖</span>英语四级<span class="badge" id="navBadge" style="display:none;">!</span></div>
     <div class="ni" data-page="ink" style="--mc:var(--m7)"><span class="ico">💭</span>墨鳞素材库</div>
     <div class="ni" data-page="star" style="--mc:var(--m8)"><span class="ico">⭐</span>周翊然</div>
+    <div class="ni" data-page="bartend" style="--mc:var(--m9)"><span class="ico">🍸</span>调酒师</div>
+    <div class="ni" data-page="mystic" style="--mc:var(--m10)"><span class="ico">🔮</span>玄学</div>
   </nav>
 </aside>
 <div class="ov" id="ov"></div>
@@ -330,6 +332,32 @@ canvas{max-width:100%;}
     </div>
     <div class="card"><div class="ct"><span class="ico">📋</span>追星行程速览</div><div id="starSchedule" style="font-size:13px;line-height:2;"></div></div>
   </div>
+  <div class="page" id="page-bartend" style="--mc:var(--m9);--mc-l:#A8BABA;--mc-bg:#EFF4F4;">
+    <div class="card"><div class="ct"><span class="ico">🍸</span>今日调酒任务<span class="tg" id="barDateLabel"></span></div>
+      <p style="font-size:12px;color:var(--muted);">打勾完成 → 自动解锁下一个任务 · 循序渐进</p>
+      <div id="barTask"></div>
+    </div>
+    <div class="card"><div class="ct"><span class="ico">📚</span>调酒知识库</div>
+      <p style="font-size:12px;color:var(--muted);">每日精选2条 · 基酒/手法/配方</p>
+      <div id="barKnow"></div>
+    </div>
+    <div class="card"><div class="ct"><span class="ico">🎬</span>推荐学习视频</div>
+      <div id="barVideos"></div>
+    </div>
+  </div>
+  <div class="page" id="page-mystic" style="--mc:var(--m10);--mc-l:#BBA8C8;--mc-bg:#F5EFF7;">
+    <div class="card"><div class="ct"><span class="ico">🔮</span>每日命理小知识<span class="tg" id="mysticDateLabel"></span></div>
+      <p style="font-size:12px;color:var(--muted);">每日精选2条 · 八字/五行/十神 · 明天自动换新</p>
+      <div id="mysticList"></div>
+    </div>
+    <div class="card"><div class="ct"><span class="ico">🗺️</span>系统学习路线</div>
+      <p style="font-size:12px;color:var(--muted);">从零基础到能看懂命盘的完整路径</p>
+      <div id="mysticRoad"></div>
+    </div>
+    <div class="card"><div class="ct"><span class="ico">📖</span>推荐学习资源</div>
+      <div id="mysticRes"></div>
+    </div>
+  </div>
 </div>
 <script>
 const K='molin_v2';
@@ -342,8 +370,8 @@ function save(){DB._ts=Date.now();localStorage.setItem(K,JSON.stringify(DB));cle
 const dayIdx=()=>Math.floor(Date.now()/86400000);
 const rotIdx=(n,len)=>{const s=(dayIdx()*n)%len,r=[];for(let j=0;j<n;j++)r.push((s+j)%len);return r;};
 async function ghPush(){try{const content=btoa(unescape(encodeURIComponent(JSON.stringify(DB))));const body={message:'sync '+TD()+' '+new Date().toLocaleTimeString(),content};if(_ghSHA)body.sha=_ghSHA;const r=await fetch(GH_API,{method:'PUT',headers:{'Authorization':'token '+GH_TOKEN,'Content-Type':'application/json'},body:JSON.stringify(body)});if(r.ok){const d=await r.json();_ghSHA=d.content.sha;}}catch(e){}}
-async function ghPull(){try{const r=await fetch(GH_API+'?ref=main',{headers:{'Authorization':'token '+GH_TOKEN}});if(!r.ok)return;const d=await r.json();_ghSHA=d.sha;const cloud=JSON.parse(decodeURIComponent(escape(atob(d.content.replace(/\n/g,'')))));if(!DB._ts||(cloud._ts||0)>DB._ts){Object.assign(DB,cloud);localStorage.setItem(K,JSON.stringify(DB));renderCal();renderIP();renderIpBook();renderPiano();renderWeek();renderHeat();renderAcc();renderCet();renderInk();renderStar();}}catch(e){}}
-['plans','accounts','cetReport','pianoDone','shapeDone','mood','ipChecked','inkChecked','inkBook','inkMy','ipMy','starDiary','newWords','pianoTaskDate','pianoTaskDone'].forEach(k=>{if(!DB[k])DB[k]=(k==='accounts'||k==='inkBook'||k==='inkMy'||k==='ipMy'||k==='starDiary'||k==='newWords')?[]:{}});
+async function ghPull(){try{const r=await fetch(GH_API+'?ref=main',{headers:{'Authorization':'token '+GH_TOKEN}});if(!r.ok)return;const d=await r.json();_ghSHA=d.sha;const cloud=JSON.parse(decodeURIComponent(escape(atob(d.content.replace(/\n/g,'')))));if(!DB._ts||(cloud._ts||0)>DB._ts){Object.assign(DB,cloud);localStorage.setItem(K,JSON.stringify(DB));renderCal();renderIP();renderIpBook();renderPiano();renderWeek();renderHeat();renderAcc();renderCet();renderInk();renderStar();renderBartend();renderMystic();}}catch(e){}}
+['plans','accounts','cetReport','pianoDone','shapeDone','mood','ipChecked','inkChecked','inkBook','inkMy','ipMy','starDiary','newWords','pianoTaskDate','pianoTaskDone','barDone','barTaskDate','barTaskDone'].forEach(k=>{if(!DB[k])DB[k]=(k==='accounts'||k==='inkBook'||k==='inkMy'||k==='ipMy'||k==='starDiary'||k==='newWords')?[]:{}});
 
 const TD=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
 const DOW=['日','一','二','三','四','五','六'];
@@ -351,7 +379,7 @@ document.getElementById('td2').textContent=TD();
 const sb=document.getElementById('sidebar'),ov=document.getElementById('ov');
 document.getElementById('mb').onclick=()=>{sb.classList.add('open');ov.classList.add('show');};
 ov.onclick=()=>{sb.classList.remove('open');ov.classList.remove('show');};
-const titles={cal:'每日计划表',ip:'个人IP素材库',piano:'钢琴练习',shape:'塑形计划',acc:'我的账户',eng:'英语四级',ink:'墨鳞素材库',star:'周翊然'};
+const titles={cal:'每日计划表',ip:'个人IP素材库',piano:'钢琴练习',shape:'塑形计划',acc:'我的账户',eng:'英语四级',ink:'墨鳞素材库',star:'周翊然',bartend:'调酒师',mystic:'玄学'};
 document.querySelectorAll('.ni').forEach(it=>{it.onclick=()=>{const pg=it.dataset.page;document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));it.classList.add('active');document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-'+pg).classList.add('active');document.getElementById('tt').textContent=titles[pg];sb.classList.remove('open');ov.classList.remove('show');if(pg==='acc')renderChart();if(pg==='shape')renderHeat();};});
 function speak(text){if('speechSynthesis'in window){const u=new SpeechSynthesisUtterance(text);u.lang='en-US';u.rate=0.8;speechSynthesis.speak(u);}}
 
@@ -423,7 +451,78 @@ const starData=[{t:'周翊然微博主页',d:'官方动态·最新消息',link:'
 const starSchedule=`<div style="padding:6px 10px;background:var(--mc-bg);border-radius:8px;margin:4px 0;border-left:3px solid var(--mc);">📅 <b>2026上半年：</b>《翘楚》开播6天优酷热度破万，一番男主</div><div style="padding:6px 10px;background:var(--mc-bg);border-radius:8px;margin:4px 0;border-left:3px solid var(--mc);">📰 <b>五月刊：</b>ELLEMEN封面大片，少年氛围感</div><div style="padding:6px 10px;background:var(--mc-bg);border-radius:8px;margin:4px 0;border-left:3px solid var(--mc);">👟 <b>六月：</b>ASICS官宣品牌大使，GEL-PHAI Z发布</div><div style="padding:6px 10px;background:var(--mc-bg);border-radius:8px;margin:4px 0;border-left:3px solid var(--mc);">🎵 <b>近期：</b>与白鹿合作MV《透明爱人》发布</div><div style="padding:6px 10px;background:var(--mc-bg);border-radius:8px;margin:4px 0;border-left:3px solid var(--mc);">🎥 <b>6-7月：</b>综艺录制·时装周·音乐节·商务拍摄</div>`;
 function renderStar(){const show=rotIdx(3,starData.length),today=TD();const dl=document.getElementById('starDateLabel');if(dl)dl.textContent=today;document.getElementById('starList').innerHTML=show.map(idx=>{const s=starData[idx];return `<div class="vc"><div class="vt">[${s.tag}] ${s.t}</div><div class="vd">${s.d}</div><a class="vl" href="${s.link}" target="_blank">🔗 查看详情</a></div>`;}).join('');document.getElementById('starSchedule').innerHTML=starSchedule;}
 
-renderCal();renderIP();renderIpBook();renderPiano();renderWeek();renderHeat();renderAcc();renderCet();renderInk();renderStar();
+const barTasks=[
+  {t:'认识六大基酒',d:'伏特加、金酒、朗姆、龙舌兰、威士忌、白兰地——记住各自的原料和风味特点',link:'https://www.bilibili.com/video/BV16s3W6YEj2/'},
+  {t:'认识调酒工具',d:'雪克杯(Shaker)、量酒器、滤冰器、吧勺、捣棒——知道每个工具的用途',link:'https://post.smzdm.com/p/a3gwxlzn/'},
+  {t:'学会摇酒(Shake)手法',d:'握杯姿势、摇动节奏、力度控制——冰块撞击酒液的声音是关键',link:'https://www.douyin.com/search/调酒摇酒手法教学'},
+  {t:'学会搅拌(Stir)手法',d:'吧勺在杯中匀速旋转，手法要轻柔稳定，适合清澈型鸡尾酒',link:'https://www.sohu.com/a/925753416_122490775'},
+  {t:'第一杯：金汤力(Gin Tonic)',d:'金酒45ml+汤力水补满+青柠角，最简单的入门鸡尾酒',link:'https://zhuanlan.zhihu.com/p/495734696'},
+  {t:'第二杯：莫吉托(Mojito)',d:'白朗姆60ml+青柠+薄荷+糖+苏打水，清爽夏日经典',link:'https://zhuanlan.zhihu.com/p/495734696'},
+  {t:'第三杯：威士忌酸(Whiskey Sour)',d:'威士忌60ml+柠檬汁30ml+糖浆15ml+蛋白，摇和法的经典练习',link:'https://www.sohu.com/a/1005794189_122643985'},
+  {t:'第四杯：玛格丽特(Margarita)',d:'龙舌兰50ml+君度20ml+青柠汁20ml+盐边，龙舌兰代表作品',link:'https://zhuanlan.zhihu.com/p/495734696'},
+  {t:'第五杯：龙舌兰日出',d:'龙舌兰45ml+橙汁补满+红石榴糖浆15ml，不摇不搅的渐层酒',link:'https://www.sohu.com/a/925753416_122490775'},
+  {t:'第六杯：Cosmopolitan',d:'伏特加40ml+君度15ml+青柠汁15ml+蔓越莓汁30ml，时尚经典',link:'https://www.sohu.com/a/1005794189_122643985'},
+  {t:'学会分层注入法',d:'利用密度差实现渐层效果，吧勺背引流是关键技巧',link:'https://www.sohu.com/a/925753416_122490775'},
+  {t:'自创一杯鸡尾酒',d:'选一款基酒，搭配2-3种辅料，记录配方比例，给这杯酒取个名字',link:'https://www.163.com/dy/article/KPQB6D840556KN3Q.html'}
+];
+const barKnowData=[
+  {t:'六大基酒速记',d:'伏特加(无色无味)·金酒(杜松子香)·朗姆(甘蔗甜)·龙舌兰(草本辛辣)·威士忌(麦芽木桶香)·白兰地(果香醇厚)',link:'https://zhuanlan.zhihu.com/p/25366727873',src:'知乎 · 一张图搞懂六大基酒'},
+  {t:'摇和 vs 搅拌',d:'摇和(Shake)：用力摇动雪克杯，适合含果汁/蛋奶的酒，口感冰爽丝滑。搅拌(Stir)：吧勺匀速旋转，适合纯酒类，保持清澈通透',link:'https://www.douyin.com/search/调酒摇酒手法教学',src:'抖音 · 调酒玩法视频教程'},
+  {t:'冰块的作用',d:'冰块不仅是降温工具——摇和时冰块撞击酒液产生细微气泡，搅拌时冰块缓慢融化稀释酒液，都影响最终口感',link:'https://www.sohu.com/a/925753416_122490775',src:'搜狐 · 调酒方法大全'},
+  {t:'鸡尾酒分类',d:'按手法分：短饮(60-90ml不加冰)·长饮(120ml以上加冰)。按酒精度分：烈性(25%+)·中庸(15-25%)·温和(15%以下)',link:'https://www.sohu.com/a/1005794189_122643985',src:'搜狐 · 一文读懂调酒学'},
+  {t:'量酒器使用技巧',d:'日式量酒器两端不同容量(如30ml/45ml)，倒酒时手腕翻转要干脆利落，多练才能精准',link:'https://www.bilibili.com/cheese/play/ep371182',src:'B站 · 展呈讲调酒爱好者入门'},
+  {t:'糖浆自制方法',d:'白糖:热水=1:1搅拌至融化，冷却后装瓶。也可用蜂蜜/枫糖浆替代，风味不同',link:'https://zhuanlan.zhihu.com/p/495734696',src:'知乎 · 鸡尾酒调制配方大全'},
+  {t:'酒杯选择指南',d:'马天尼杯(短饮)·柯林杯(长饮)·古典杯(加冰)·飓风杯(热带风格)·酸酒杯(酸酒类)',link:'https://post.smzdm.com/p/a3gwxlzn/',src:'什么值得买 · 保姆级调酒入门攻略'},
+  {t:'装饰物的作用',d:'柑橘皮(喷油增香)·樱桃/橄榄(风味搭配)·薄荷叶(拍醒后香气释放)——装饰不是摆设，是风味的延伸',link:'https://www.sohu.com/a/925753416_122490775',src:'搜狐 · 调酒方法大全'}
+];
+const barVideos=[
+  {t:'调酒入门干货：一分钟看懂六大基酒',d:'B站·伏特加/威士忌/朗姆/金酒/龙舌兰/白兰地',link:'https://www.bilibili.com/video/BV16s3W6YEj2/'},
+  {t:'展呈讲调酒：日式调酒从零基础到入门',d:'B站课堂·10年调酒师系统教学',link:'https://www.bilibili.com/cheese/play/ss4682'},
+  {t:'零基础在家学调酒',d:'B站课堂·入门视频课',link:'https://www.bilibili.com/cheese/play/ep1065695'},
+  {t:'调酒教学：零基础入门详细讲解',d:'爱奇艺·准备/步骤/配方全套',link:'https://www.iqiyi.com/v_1k1qzmfzg5k.html'},
+  {t:'零基础调酒教程（20集全）',d:'腾讯视频·系统课从工具到配方',link:'https://v.qq.com/x/cover/mzc00100j05ga9l.html'},
+  {t:'不止摇酒那么简单！一文读懂调酒学',d:'搜狐·新手调酒师实用建议',link:'https://www.sohu.com/a/1005794189_122643985'},
+  {t:'保姆级调酒入门攻略',d:'什么值得买·工具+基酒+配方全套',link:'https://post.smzdm.com/p/a3gwxlzn/'},
+  {t:'鸡尾酒调制配方大全',d:'知乎·6分钟学会在家调酒',link:'https://zhuanlan.zhihu.com/p/495734696'}
+];
+function getBarTaskIdx(){const today=TD();let idx=typeof DB.barTaskDone==='number'?DB.barTaskDone:0;if(DB.barTaskDate===today)return idx;const d=new Date();d.setDate(d.getDate()-1);const yd=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');if(DB.barTaskDate===yd&&DB.barDone[yd]){const done=DB.barDone[yd][idx];if(!done){DB.barTaskDate=today;save();return idx;}else{const next=Math.min(idx+1,barTasks.length-1);DB.barTaskDate=today;DB.barTaskDone=next;save();return next;}}DB.barTaskDate=today;DB.barTaskDone=idx;save();return idx;}
+function renderBartend(){const idx=getBarTaskIdx(),task=barTasks[idx]||barTasks[0],today=TD();if(!DB.barDone[today])DB.barDone[today]={};const done=DB.barDone[today][idx];const dl=document.getElementById('barDateLabel');if(dl)dl.textContent='任务'+(idx+1)+'/'+barTasks.length;document.getElementById('barTask').innerHTML=`<div class="pi ${done?'done':''}"><span class="chk" onclick="togBar(${idx})">${done?'✅':'⬜'}</span><span class="tx">${task.t}</span></div><div style="font-size:13px;color:var(--ink-s);margin:8px 0 4px;padding-left:8px;">${task.d}</div><a class="vl" href="${task.link}" target="_blank" style="margin-left:8px;">🎬 观看教学视频</a>${done?'<div style="margin-top:10px;padding:8px 12px;background:var(--mc-bg);border-radius:8px;font-size:12px;color:var(--green);">✅ 已完成！明天自动解锁下一个任务</div>':'<div style="margin-top:10px;padding:8px 12px;background:var(--mc-bg);border-radius:8px;font-size:12px;color:var(--muted);">完成打勾后，明天自动解锁下一个任务</div>'}`;const knowShow=rotIdx(2,barKnowData.length);document.getElementById('barKnow').innerHTML=knowShow.map(ki=>{const k=barKnowData[ki];return `<div class="ip-item"><div class="title">${k.t}</div><div class="brk">${k.d}</div><div class="src">📖 <a href="${k.link}" target="_blank">${k.src}</a></div></div>`;}).join('');document.getElementById('barVideos').innerHTML=barVideos.map(v=>`<div class="vc"><div class="vt">${v.t}</div><div class="vd">${v.d}</div><a class="vl" href="${v.link}" target="_blank">▶️ 去学习</a></div>`).join('');}
+function togBar(idx){const t=TD();if(!DB.barDone[t])DB.barDone[t]={};DB.barDone[t][idx]=!DB.barDone[t][idx];save();renderBartend();}
+
+const mysticData=[
+  {t:'什么是八字',d:'八字=出生年月日时对应的天干地支，共四柱八个字。比如2005年3月15日14时→乙酉年己卯月戊申日己未时',link:'https://zhuanlan.zhihu.com/p/30063331980',src:'知乎 · 八字基础知识入门教材'},
+  {t:'阴阳五行基础',d:'木(生长)·火(炎热)·土(承载)·金(肃杀)·水(滋润)。相生：木→火→土→金→水→木。相克：木→土→水→火→金→木',link:'https://www.toutiao.com/article/7501159399583580681/',src:'今日头条 · 阴阳五行与八字入门'},
+  {t:'天干地支速记',d:'十天干：甲乙(木)·丙丁(火)·戊己(土)·庚辛(金)·壬癸(水)。十二地支：子丑寅卯辰巳午未申酉戌亥',link:'https://www.sohu.com/a/948012774_122480966',src:'搜狐 · 子平八字入门基石'},
+  {t:'十神是什么',d:'以日干为"我"，其他干支与我的关系：生我=正印/偏印，我生=食神/伤官，克我=正官/七杀，我克=正财/偏财，同我=比肩/劫财',link:'https://www.yixiangqiankun.com/bazi-guide',src:'易象乾坤 · 八字入门大全'},
+  {t:'四柱代表什么',d:'年柱(祖辈·早年)·月柱(父母·青年)·日柱(自己·配偶·中年)·时柱(子女·晚年)。日干=你自己',link:'https://www.bilibili.com/opus/1156986815750602760',src:'B站 · 八字基础入门'},
+  {t:'五行旺衰判断',d:'看八字中哪种五行多、哪种少。比如木多=仁慈有主见，火多=热情急躁，水多=聪明灵活但多变',link:'https://www.deeporacle.ai/bazi/blog/bazi-for-beginners',src:'DeepOracle · 从零开始学八字'},
+  {t:'地支藏干',d:'每个地支里藏着天干：如寅藏甲丙戊，巳藏丙庚戊。藏干决定地支的内在属性',link:'https://astrologybazi.com/blog/eastern-wisdom/zh/tiangan-dizhi-xiangxi',src:'AstrologyBazi · 天干地支详解'},
+  {t:'地支六合三合',d:'六合：子丑·寅亥·卯戌·辰酉·巳申·午未。三合：申子辰(水)·亥卯未(木)·寅午戌(火)·巳酉丑(金)',link:'https://www.bzpaipan.com/tian-gan-de-zhi-yu-wu-xing-de-he-xin-guan-xi-yu-tui-yan-loo-ji/',src:'卜知排盘 · 天干地支与五行'},
+  {t:'什么叫"格局"',d:'格局=八字中最有影响力的五行组合。常见格局：正官格·偏官格·正财格·偏财格·正印格·偏印格·食神格·伤官格',link:'https://www.toutiao.com/article/7656030671453864457/',src:'今日头条 · 八字从入门到进阶'},
+  {t:'身强身弱怎么看',d:'看日干是否得令(月支生扶)、得地(地支有根)、得势(天干比劫多)。三者得其二以上=身强，否则身弱',link:'https://www.longhuzhengyi.com/blogs/xuanxuezhishi/八字命理入门-零基础也能看懂的八字排盘教学',src:'龙虎山正一观 · 八字排盘教学'},
+  {t:'大运流年',d:'大运=每10年一个阶段，从月柱推算。流年=每一年的天干地支。大运定方向，流年定时机',link:'https://www.deeporacle.ai/bazi/blog/bazi-for-beginners',src:'DeepOracle · 从零开始学八字'},
+  {t:'学八字的正确态度',d:'八字不是宿命论，是认识自己性格和趋势的工具。"命里有时终须有"不是消极等待，是懂得顺势而为',link:'https://www.toutiao.com/article/7656030671453864457/',src:'今日头条 · 八字学习避坑指南'}
+];
+const mysticRoad=[
+  {step:'第1阶段',t:'打基础',d:'记住阴阳五行、天干地支、地支藏干。这个阶段不要急着排盘，先把这些符号刻在脑子里',link:'https://zhuanlan.zhihu.com/p/2011037557111154651'},
+  {step:'第2阶段',t:'学十神',d:'理解十神关系（正官/七杀/正印/偏印/食神/伤官/正财/偏财/比肩/劫财），这是八字分析的核心语言',link:'https://www.yixiangqiankun.com/bazi-guide'},
+  {step:'第3阶段',t:'学排盘',d:'学会排出自己的八字命盘，能看懂四柱、大运、流年的排列方式',link:'https://www.longhuzhengyi.com/blogs/xuanxuezhishi/八字命理入门-零基础也能看懂的八字排盘教学'},
+  {step:'第4阶段',t:'学格局',d:'判断八字的格局类型，理解格局高低，这是从"看懂"到"会分析"的关键一步',link:'https://www.toutiao.com/article/7656030671453864457/'},
+  {step:'第5阶段',t:'实战分析',d:'用家人朋友的八字练习，从性格分析开始，逐步尝试趋势判断。实战是最好的老师',link:'https://www.sohu.com/a/986683372_122590956'}
+];
+const mysticRes=[
+  {t:'FateLab - 免费系统课程',d:'三步学会八字命理分析，从阴阳五行到十神格局',link:'https://fatelab.cn/'},
+  {t:'八字命理基础入门（B站14集）',d:'小白零基础视频教学，系统讲解',link:'https://www.bilibili.com/cheese/play/ep1933681'},
+  {t:'八字命理从入门到进阶',d:'完整学习流程+避坑指南，今日头条',link:'https://www.toutiao.com/article/7656030671453864457/'},
+  {t:'八字系统教程（33章）',d:'三六风水网·零基础到精通',link:'https://www.36fengshui.com/bz/jiaocheng.asp'},
+  {t:'八字入门大全',d:'易象乾坤·五行生克/天干地支/十神/格局',link:'https://www.yixiangqiankun.com/bazi-guide'},
+  {t:'零基础八字入门核心概念',d:'知乎·大白话描述，通俗易懂',link:'https://zhuanlan.zhihu.com/p/2011037557111154651'},
+  {t:'从零开始学习八字命理',d:'DeepOracle·高效学习顺序指南',link:'https://www.deeporacle.ai/bazi/blog/bazi-for-beginners'},
+  {t:'八字基础知识入门教材',d:'知乎·框架体系，适合建立整体认知',link:'https://zhuanlan.zhihu.com/p/30063331980'}
+];
+function renderMystic(){const show=rotIdx(2,mysticData.length),today=TD();const dl=document.getElementById('mysticDateLabel');if(dl)dl.textContent=today;document.getElementById('mysticList').innerHTML=show.map(idx=>{const m=mysticData[idx];return `<div class="ip-item"><div class="title">${m.t}</div><div class="brk">${m.d}</div><div class="src">📖 <a href="${m.link}" target="_blank">${m.src}</a></div></div>`;}).join('');document.getElementById('mysticRoad').innerHTML=mysticRoad.map(r=>`<div class="ip-item" style="border-left-color:var(--mc);"><div class="title"><span style="color:var(--mc);font-size:12px;">${r.step}</span> ${r.t}</div><div class="brk">${r.d}</div><a class="vl" href="${r.link}" target="_blank" style="font-size:12px;">📖 查看学习资料</a></div>`).join('');document.getElementById('mysticRes').innerHTML=mysticRes.map(r=>`<div class="vc"><div class="vt">${r.t}</div><div class="vd">${r.d}</div><a class="vl" href="${r.link}" target="_blank">📖 去学习</a></div>`).join('');}
+
+renderCal();renderIP();renderIpBook();renderPiano();renderWeek();renderHeat();renderAcc();renderCet();renderInk();renderStar();renderBartend();renderMystic();
 ghPull();
 function forceRefresh(){const btn=document.querySelector('.refresh-btn');if(btn){btn.style.transform='rotate(360deg)';btn.style.transition='transform .5s';}if('serviceWorker'in navigator){navigator.serviceWorker.getRegistrations().then(function(regs){regs.forEach(function(r){r.unregister();});setTimeout(function(){location.reload(true);},300);});}else{location.reload(true);}}
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
